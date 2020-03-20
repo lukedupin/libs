@@ -50,6 +50,7 @@ def convertData( key, typ, raw, default ):
 
 #Internal function which runs the assignment action
 def pullArgs( kwargs, req_args, request_args, req_dict, missing ):
+    errs = []
     for x in request_args:
         if len(x) < 2:
             return "Invalid json value, must have at least key and type"
@@ -65,19 +66,21 @@ def pullArgs( kwargs, req_args, request_args, req_dict, missing ):
             continue
 
         #Parse the key
-        val, err = convertData( key, type, req_dict[key], default) if key in req_dict else (default, None)
+        val, err = convertData( key, type, req_dict[key], default) if key in req_dict and req_dict[key] is not None else (default, None)
+        kwargs[key] = val
+
+        # Add any errors, we don't want to block the other variables
         if err is not None:
-            return err
+            errs.append(err)
 
         #Store the data
         if val is not None:
             kwargs[key] = req_args[key] = val
         elif missing is not None:
             missing.append( key )
-        else:
-            kwargs[key] = None
 
-    return None
+    # Return errors? or no error if everythign worked
+    return None if len(errs) <= 0 else ', '.join(errs)
 
 #Request args wrapper class
 class reqArgs:
@@ -147,7 +150,7 @@ class reqArgs:
             err = pullArgs( kwargs, req_args, self.get_opt, request.GET, None )
             if err is not None:
                 return errResponse( request, err )
-            err = pullArgs( kwargs, req_args, self.body_req, body_js, None )
+            err = pullArgs( kwargs, req_args, self.body_opt, body_js, None )
             if err is not None:
                 return errResponse( request, err )
 
