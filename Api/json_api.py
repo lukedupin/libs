@@ -122,7 +122,7 @@ class reqArgs:
                 try:
                     body_js = json.loads(request.body.decode('ascii'))
                 except json.JSONDecodeError as e:
-                    err_msg = str(e)
+                    err_msg = "Raw %s: %s" % (request.body, str(e))
                 if body_js is None or err_msg is not None:
                     return errResponse(request, "Couldn't map posted body: %s" % err_msg)
 
